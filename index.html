@@ -36,6 +36,7 @@
     border-radius: 12px;
     white-space: pre-wrap;
     line-height: 1.4;
+    word-break: break-word;
   }
   .user {
     align-self: flex-end;
@@ -48,6 +49,34 @@
     border: 1px solid #2a2d34;
   }
   .bot.loading { opacity: 0.6; font-style: italic; }
+  .bot a {
+    color: #6ea8fe;
+    word-break: break-all;
+  }
+  .publicado {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(46, 204, 113, 0.15);
+    border: 1px solid #2ecc71;
+    border-radius: 8px;
+    color: #2ecc71;
+    font-weight: 600;
+  }
+  .publicado a {
+    color: #2ecc71;
+    text-decoration: underline;
+  }
+  .fallo {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(241, 196, 15, 0.15);
+    border: 1px solid #f1c40f;
+    border-radius: 8px;
+    color: #f1c40f;
+    font-weight: 600;
+  }
   form {
     display: flex;
     gap: 8px;
@@ -97,10 +126,49 @@
   const input = document.getElementById("pregunta");
   const boton = document.getElementById("enviar");
 
-  function agregarMensaje(texto, clase) {
+  function escapeHtml(str) {
     const div = document.createElement("div");
-    div.className = "msg " + clase;
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function formatearRespuestaBot(texto) {
+    let seguro = escapeHtml(texto);
+
+    seguro = seguro.replace(
+      /✅ Publicado en: (https?:\/\/\S+)/,
+      '<div class="publicado">✅ Publicado en: <a href="$1" target="_blank" rel="noopener">$1</a></div>'
+    );
+    seguro = seguro.replace(
+      /⚠️ No se pudo publicar: (.+)/,
+      '<div class="fallo">⚠️ No se pudo publicar: $1</div>'
+    );
+
+    seguro = seguro.replace(
+      /(https?:\/\/[^\s<]+)(?![^<]*>)/g,
+      '<a href="$1" target="_blank" rel="noopener">$1</a>'
+    );
+
+    return seguro;
+  }
+
+  function agregarMensajeUsuario(texto) {
+    const div = document.createElement("div");
+    div.className = "msg user";
     div.textContent = texto;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  function agregarMensajeBot(texto, cargando) {
+    const div = document.createElement("div");
+    div.className = "msg bot" + (cargando ? " loading" : "");
+    if (cargando) {
+      div.textContent = texto;
+    } else {
+      div.innerHTML = formatearRespuestaBot(texto);
+    }
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
     return div;
@@ -111,10 +179,10 @@
     const pregunta = input.value.trim();
     if (!pregunta) return;
 
-    agregarMensaje(pregunta, "user");
+    agregarMensajeUsuario(pregunta);
     input.value = "";
     boton.disabled = true;
-    const cargando = agregarMensaje("Pensando...", "bot loading");
+    const cargando = agregarMensajeBot("Pensando...", true);
 
     try {
       const res = await fetch(FUNCTION_URL, {
@@ -128,10 +196,10 @@
       });
       const data = await res.json();
       cargando.remove();
-      agregarMensaje(data.respuesta || data.error || "No hubo respuesta.", "bot");
+      agregarMensajeBot(data.respuesta || data.error || "No hubo respuesta.", false);
     } catch (err) {
       cargando.remove();
-      agregarMensaje("Error al conectar con el bot: " + err.message, "bot");
+      agregarMensajeBot("Error al conectar con el bot: " + err.message, false);
     } finally {
       boton.disabled = false;
     }
