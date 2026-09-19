@@ -26,7 +26,7 @@
         <h1>⚾ Probabilidad en Tiempo Real</h1>
         <p style="font-size: 13px; color: #94a3b8; text-align: left; margin-bottom: 20px;">Consulta los mercados de predicción de Polymarket para obtener la probabilidad implícita más actualizada.</p>
         
-        <label for="nombreEquipo">Nombre del equipo (ej. Dodgers, Yankees, Red Sox):</label>
+        <label for="nombreEquipo">Nombre del equipo (ej. Dodgers, Red Sox, Yankees):</label>
         <input type="text" id="nombreEquipo" placeholder="Escribe el nombre del equipo...">
         
         <button onclick="buscarProbabilidad()">Investigar Probabilidad</button>
@@ -35,44 +35,23 @@
     </div>
 
     <script>
-        // Mapeo de nombres comunes a slugs de Polymarket
+        // Mapeo de nombres comunes a slugs de Polymarket (en minúsculas)
         const equiposSlugs = {
-            'dodgers': 'lad',
-            'giants': 'sf',
-            'yankees': 'nyy',
-            'red sox': 'bos',
-            'cubs': 'chc',
-            'mets': 'nym',
-            'braves': 'atl',
-            'astros': 'hou',
-            'phillies': 'phi',
-            'padres': 'sd',
-            'mariners': 'sea',
-            'rangers': 'tex',
-            'blue jays': 'tor',
-            'rays': 'tb',
-            'orioles': 'bal',
-            'guardians': 'cle',
-            'twins': 'min',
-            'tigers': 'det',
-            'royals': 'kc',
-            'white sox': 'cws',
-            'angels': 'laa',
-            'athletics': 'ath',
-            'rockies': 'col',
-            'diamondbacks': 'ari',
-            'brewers': 'mil',
-            'reds': 'cin',
-            'pirates': 'pit',
-            'cardinals': 'stl',
-            'nationals': 'wsh',
-            'marlins': 'mia'
+            'dodgers': 'lad', 'giants': 'sf', 'yankees': 'nyy', 'red sox': 'bos',
+            'cubs': 'chc', 'mets': 'nym', 'braves': 'atl', 'astros': 'hou',
+            'phillies': 'phi', 'padres': 'sd', 'mariners': 'sea', 'rangers': 'tex',
+            'blue jays': 'tor', 'rays': 'tb', 'orioles': 'bal', 'guardians': 'cle',
+            'twins': 'min', 'tigers': 'det', 'royals': 'kc', 'white sox': 'cws',
+            'angels': 'laa', 'athletics': 'ath', 'rockies': 'col', 'diamondbacks': 'ari',
+            'brewers': 'mil', 'reds': 'cin', 'pirates': 'pit', 'cardinals': 'stl',
+            'nationals': 'wsh', 'marlins': 'mia'
         };
 
         async function buscarProbabilidad() {
             const input = document.getElementById('nombreEquipo');
             const resultadoDiv = document.getElementById('resultado');
-            const nombreEquipo = input.value.trim().toLowerCase();
+            // Normalizar: quitar espacios extra y pasar a minúsculas
+            const nombreEquipo = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
 
             if (!nombreEquipo) {
                 resultadoDiv.style.display = 'block';
@@ -80,18 +59,21 @@
                 return;
             }
 
-            // Buscar el slug del equipo
+            // Buscar el slug del equipo de forma flexible
             let slugEquipo = null;
+            let nombreEncontrado = null;
             for (const [nombre, slug] of Object.entries(equiposSlugs)) {
+                // Coincidencia flexible: si el nombre del equipo contiene el término o viceversa
                 if (nombreEquipo.includes(nombre) || nombre.includes(nombreEquipo)) {
                     slugEquipo = slug;
+                    nombreEncontrado = nombre;
                     break;
                 }
             }
 
             if (!slugEquipo) {
                 resultadoDiv.style.display = 'block';
-                resultadoDiv.innerHTML = '<p class="error">Equipo no reconocido. Prueba con: Dodgers, Giants, Yankees, etc.</p>';
+                resultadoDiv.innerHTML = '<p class="error">Equipo no reconocido. Prueba con: Dodgers, Giants, Red Sox, Yankees, etc.</p>';
                 return;
             }
 
@@ -99,61 +81,46 @@
             resultadoDiv.innerHTML = '<p class="loading">Consultando mercados de predicción...</p>';
 
             try {
-                // Consultar la API de Polymarket (Gamma API para mercados públicos)
-                // Buscamos eventos de MLB activos
-                const respuesta = await fetch(
-                    'https://gamma-api.polymarket.com/events?tag=mlb&active=true&closed=false&limit=50',
-                    { headers: { 'Accept': 'application/json' } }
-                );
+                // Usar un proxy CORS público para evitar el bloqueo del navegador
+                const urlAPI = 'https://gamma-api.polymarket.com/events?tag=mlb&active=true&closed=false&limit=100';
+                const urlProxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(urlAPI);
 
+                const respuesta = await fetch(urlProxy);
                 if (!respuesta.ok) throw new Error('Error al consultar la API');
 
                 const eventos = await respuesta.json();
 
                 // Buscar el evento que involucre a nuestro equipo
                 let mercadoEncontrado = null;
+                
                 for (const evento of eventos) {
                     const titulo = (evento.title || '').toLowerCase();
                     const slug = (evento.slug || '').toLowerCase();
                     
                     // Verificar si el equipo está en el título o slug del evento
-                    const nombresEquipo = Object.keys(equiposSlugs).filter(n => 
-                        n.includes(nombreEquipo) || nombreEquipo.includes(n)
-                    );
-                    
-                    for (const nombre of nombresEquipo) {
-                        if (titulo.includes(nombre) || slug.includes(nombre)) {
-                            // Verificar si es un partido de hoy o próximo
-                            const fechaEvento = evento.startDate ? new Date(evento.startDate) : null;
-                            const hoy = new Date();
-                            
-                            // Buscar dentro de los mercados del evento
-                            if (evento.markets && evento.markets.length > 0) {
-                                for (const mercado of evento.markets) {
-                                    // Buscar el mercado de moneyline (ganador del partido)
-                                    if (mercado.question && 
-                                        (mercado.question.toLowerCase().includes('win') || 
-                                         mercado.question.toLowerCase().includes('moneyline') ||
-                                         mercado.outcomes)) {
-                                        
-                                        mercadoEncontrado = {
-                                            equipo: nombre,
-                                            evento: evento.title,
-                                            mercado: mercado,
-                                            fecha: evento.startDate
-                                        };
-                                        break;
-                                    }
+                    if (titulo.includes(nombreEncontrado) || slug.includes(nombreEncontrado) || 
+                        titulo.includes(slugEquipo) || slug.includes(slugEquipo)) {
+                        
+                        // Buscar dentro de los mercados del evento
+                        if (evento.markets && evento.markets.length > 0) {
+                            for (const mercado of evento.markets) {
+                                // Buscar el mercado de moneyline (ganador del partido)
+                                if (mercado.outcomes && mercado.outcomePrices) {
+                                    mercadoEncontrado = {
+                                        equipo: nombreEncontrado,
+                                        evento: evento.title,
+                                        mercado: mercado,
+                                        fecha: evento.startDate
+                                    };
+                                    break;
                                 }
                             }
-                            if (mercadoEncontrado) break;
                         }
                     }
                     if (mercadoEncontrado) break;
                 }
 
                 if (!mercadoEncontrado) {
-                    // Si no encontramos mercado específico, mostrar información genérica
                     resultadoDiv.innerHTML = `
                         <p class="equipo">🔍 No se encontró un partido activo para "${input.value}"</p>
                         <p style="font-size: 13px; color: #94a3b8; margin-top: 10px;">
@@ -167,62 +134,48 @@
                 // Extraer probabilidades del mercado
                 const mercado = mercadoEncontrado.mercado;
                 let precios = null;
+                let outcomes = [];
 
-                // Intentar obtener precios de diferentes formatos de la API
-                if (mercado.outcomePrices) {
-                    try {
-                        precios = JSON.parse(mercado.outcomePrices);
-                    } catch (e) {
-                        precios = mercado.outcomePrices.split(',').map(Number);
-                    }
+                try {
+                    precios = JSON.parse(mercado.outcomePrices);
+                    outcomes = JSON.parse(mercado.outcomes);
+                } catch (e) {
+                    // Si no es JSON, dividir por comas
+                    precios = mercado.outcomePrices.split(',').map(p => parseFloat(p));
+                    outcomes = mercado.outcomes.split(',');
                 }
 
-                if (mercado.outcomes && precios) {
-                    let outcomes = [];
-                    try {
-                        outcomes = JSON.parse(mercado.outcomes);
-                    } catch (e) {
-                        outcomes = mercado.outcomes.split(',');
+                // Buscar el índice de nuestro equipo
+                let indiceEquipo = -1;
+                outcomes.forEach((outcome, i) => {
+                    if (outcome.toLowerCase().includes(nombreEncontrado) || 
+                        outcome.toLowerCase().includes(slugEquipo)) {
+                        indiceEquipo = i;
                     }
+                });
 
-                    // Buscar el índice de nuestro equipo
-                    let indiceEquipo = -1;
-                    outcomes.forEach((outcome, i) => {
-                        if (outcome.toLowerCase().includes(mercadoEncontrado.equipo)) {
-                            indiceEquipo = i;
-                        }
-                    });
+                // Si no encontramos el nombre exacto, asumir que el primer outcome es el equipo local o similar
+                if (indiceEquipo === -1 && precios.length >= 2) {
+                    indiceEquipo = 0;
+                }
 
-                    if (indiceEquipo === -1 && outcomes.length >= 2) {
-                        // Si no encontramos el nombre exacto, asumir que el primer outcome es "Yes" para el equipo local o similar
-                        indiceEquipo = 0;
-                    }
+                const probabilidad = precios[indiceEquipo] ? Math.round(precios[indiceEquipo] * 100) : null;
 
-                    const probabilidad = precios[indiceEquipo] ? Math.round(precios[indiceEquipo] * 100) : null;
-
-                    if (probabilidad !== null) {
-                        resultadoDiv.innerHTML = `
-                            <div class="equipo">${mercadoEncontrado.equipo.toUpperCase()}</div>
-                            <div class="prob-num">${probabilidad}%</div>
-                            <div style="font-size: 14px; color: #94a3b8; margin-top: 10px;">
-                                Probabilidad implícita de ganar
-                            </div>
-                            <div style="font-size: 13px; color: #64748b; margin-top: 15px; text-align: left;">
-                                <p><strong>Partido:</strong> ${mercadoEncontrado.evento}</p>
-                                <p><strong>Pregunta:</strong> ${mercado.question}</p>
-                            </div>
-                            <p class="fuente">Fuente: Polymarket (mercado de predicción con dinero real)</p>
-                        `;
-                    } else {
-                        throw new Error('No se pudieron interpretar los precios');
-                    }
-                } else {
-                    // Mostrar información del mercado sin probabilidad numérica clara
+                if (probabilidad !== null) {
                     resultadoDiv.innerHTML = `
-                        <p class="equipo">📊 ${mercadoEncontrado.evento}</p>
-                        <p style="font-size: 14px; margin-top: 10px;">Mercado encontrado pero sin precios disponibles en este momento.</p>
-                        <p style="font-size: 12px; color: #64748b; margin-top: 10px;">Intenta de nuevo más tarde o consulta directamente en Polymarket.</p>
+                        <div class="equipo">${nombreEncontrado.toUpperCase()}</div>
+                        <div class="prob-num">${probabilidad}%</div>
+                        <div style="font-size: 14px; color: #94a3b8; margin-top: 10px;">
+                            Probabilidad implícita de ganar
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; margin-top: 15px; text-align: left;">
+                            <p><strong>Partido:</strong> ${mercadoEncontrado.evento}</p>
+                            <p><strong>Pregunta:</strong> ${mercado.question || 'Ganador del partido'}</p>
+                        </div>
+                        <p class="fuente">Fuente: Polymarket (mercado de predicción con dinero real)</p>
                     `;
+                } else {
+                    throw new Error('No se pudieron interpretar los precios');
                 }
 
             } catch (error) {
@@ -232,8 +185,7 @@
                     <p style="font-size: 13px; color: #94a3b8; margin-top: 10px;">
                         ${error.message}. 
                         <br><br>
-                        Esto puede deberse a restricciones de CORS del navegador. 
-                        Para mejores resultados, consulta directamente:
+                        Intenta de nuevo en unos momentos o consulta directamente:
                         <br>
                         <a href="https://polymarket.com" target="_blank" style="color: #38bdf8;">polymarket.com</a>
                     </p>
