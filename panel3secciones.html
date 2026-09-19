@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Integrado - Notas, Conversor y Tareas</title>
+  <style>
+    /* --- CSS RESET & VARIABLES --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    :root {
+      --bg-color: #121214;
+      --card-bg: #1a1a1e;
+      --input-bg: #26262b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-color: #374151;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --radius: 8px;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+    }
+
+    /* --- CONTENEDOR PRINCIPAL --- */
+    .app-container {
+      width: 100%;
+      max-width: 800px;
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    /* --- NAVEGACIÓN POR PESTAÑAS --- */
+    .tabs-header {
+      display: flex;
+      background-color: #151518;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 15px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+      border-bottom: 3px solid transparent;
+      outline: none;
+    }
+
+    .tab-button:hover {
+      color: var(--text-main);
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .tab-button.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background-color: var(--card-bg);
+    }
+
+    /* --- CONTENIDO DE LAS SECCIONES Y TRANSICIÓN SUAVE --- */
+    .tab-content-wrapper {
+      padding: 24px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+      animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* --- ESTILOS COMUNES --- */
+    h2 {
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    input, textarea, select, button {
+      font-size: 0.95rem;
+      border-radius: var(--radius);
+    }
+
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      padding: 10px 18px;
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger-hover);
+    }
+
+    /* --- SECCIÓN 1: NOTAS RÁPIDAS --- */
+    .note-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .note-form textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    .note-card {
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .note-content {
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .note-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+
+    .note-card .btn-delete-note {
+      align-self: flex-end;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+    }
+
+    /* --- SECCIÓN 2: CONVERSOR --- */
+    .converter-group {
+      background-color: var(--input-bg);
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      margin-bottom: 16px;
+    }
+
+    .converter-group h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+
+    .converter-inputs {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .converter-inputs fieldset {
+      border: none;
+      flex: 1;
+    }
+
+    .converter-inputs label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .rate-setting {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .rate-setting label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .rate-setting input {
+      max-width: 120px;
+    }
+
+    /* --- SECCIÓN 3: LISTA DE TAREAS --- */
+    .todo-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .todo-stats {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .todo-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      gap: 12px;
+    }
+
+    .todo-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .todo-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .todo-text {
+      overflow-wrap: anywhere;
+    }
+
+    .todo-item.completed .todo-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .empty-msg {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-style: italic;
+      text-align: center;
+      padding: 20px 0;
+      grid-column: 1 / -1;
+    }
+
+    /* RESPONSIVO */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      .app-container {
+        margin-top: 0;
+      }
+
+      .converter-inputs {
+        flex-direction: column;
+      }
+
+      .tab-button {
+        padding: 12px 6px;
+        font-size: 0.85rem;
+      }
+
+      .tab-content-wrapper {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Navegación de pestañas -->
+    <nav class="tabs-header">
+      <button class="tab-button active" onclick="switchTab('sec-notas', this)">Notas Rápidas</button>
+      <button class="tab-button" onclick="switchTab('sec-conversor', this)">Conversor</button>
+      <button class="tab-button" onclick="switchTab('sec-tareas', this)">Tareas</button>
+    </nav>
+
+    <main class="tab-content-wrapper">
+      
+      <!-- SECCIÓN 1: NOTAS RÁPIDAS -->
+      <section id="sec-notas" class="tab-panel active">
+        <h2>Notas Rápidas</h2>
+        <div class="note-form">
+          <textarea id="noteInput" placeholder="Escribe tu nota aquí..."></textarea>
+          <button class="btn" onclick="addNote()">Guardar Nota</button>
+        </div>
+        <div id="notesContainer" class="notes-grid"></div>
+      </section>
+
+      <!-- SECCIÓN 2: CONVERSOR DE UNIDADES -->
+      <section id="sec-conversor" class="tab-panel">
+        <h2>Conversor de Unidades</h2>
+
+        <!-- Longitud -->
+        <div class="converter-group">
+          <h3>Metros / Pies</h3>
+          <div class="converter-inputs">
+            <fieldset>
+              <label for="valMetros">Metros</label>
+              <input type="number" id="valMetros" placeholder="0" oninput="convertLength('m')">
+            </fieldset>
+            <fieldset>
+              <label for="valPies">Pies</label>
+              <input type="number" id="valPies" placeholder="0" oninput="convertLength('ft')">
+            </fieldset>
+          </div>
+        </div>
+
+        <!-- Masa -->
+        <div class="converter-group">
+          <h3>Kilos / Libras</h3>
+          <div class="converter-inputs">
+            <fieldset>
+              <label for="valKilos">Kilos</label>
+              <input type="number" id="valKilos" placeholder="0" oninput="convertWeight('kg')">
+            </fieldset>
+            <fieldset>
+              <label for="valLibras">Libras</label>
+              <input type="number" id="valLibras" placeholder="0" oninput="convertWeight('lb')">
+            </fieldset>
+          </div>
+        </div>
+
+        <!-- Moneda -->
+        <div class="converter-group">
+          <h3>Pesos Mexicanos (MXN) / Dólares (USD)</h3>
+          <div class="rate-setting">
+            <label for="exchangeRate">Tasa de cambio (1 USD = MXN):</label>
+            <input type="number" id="exchangeRate" value="18.00" step="0.01" oninput="saveExchangeRate(); convertCurrency('usd');">
+          </div>
+          <div class="converter-inputs">
+            <fieldset>
+              <label for="valMxn">Pesos (MXN)</label>
+              <input type="number" id="valMxn" placeholder="0" oninput="convertCurrency('mxn')">
+            </fieldset>
+            <fieldset>
+              <label for="valUsd">Dólares (USD)</label>
+              <input type="number" id="valUsd" placeholder="0" oninput="convertCurrency('usd')">
+            </fieldset>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 3: LISTA DE TAREAS -->
+      <section id="sec-tareas" class="tab-panel">
+        <h2>Lista de Tareas</h2>
+        <div class="todo-input-group">
+          <input type="text" id="todoInput" placeholder="Nueva tarea..." onkeypress="handleTodoKeypress(event)">
+          <button class="btn" onclick="addTodo()">Agregar</button>
+        </div>
+        <div class="todo-stats" id="todoStats">0 tareas pendientes</div>
+        <ul class="todo-list" id="todoList"></ul>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    /* --- NAVEGACIÓN ENTRE PESTAÑAS --- */
+    function switchTab(tabId, buttonEl) {
+      const panels = document.querySelectorAll('.tab-panel');
+      const buttons = document.querySelectorAll('.tab-button');
+
+      buttons.forEach(btn => btn.classList.remove('active'));
+      panels.forEach(panel => panel.classList.remove('active'));
+
+      buttonEl.classList.add('active');
+      const targetPanel = document.getElementById(tabId);
+      targetPanel.classList.add('active');
+    }
+
+    /* --- SECCIÓN 1: NOTAS RÁPIDAS (localStorage) --- */
+    const NOTE_KEY = 'panel_app_notes';
+
+    function getNotes() {
+      return JSON.parse(localStorage.getItem(NOTE_KEY) || '[]');
+    }
+
+    function saveNotesArray(notes) {
+      localStorage.setItem(NOTE_KEY, JSON.stringify(notes));
+    }
+
+    function renderNotes() {
+      const container = document.getElementById('notesContainer');
+      const notes = getNotes();
+      container.innerHTML = '';
+
+      if (notes.length === 0) {
+        container.innerHTML = '<div class="empty-msg">No hay notas guardadas.</div>';
+        return;
+      }
+
+      notes.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `
+          <div class="note-content">${escapeHtml(note.text)}</div>
+          <div class="note-date">${note.date}</div>
+          <button class="btn btn-danger btn-delete-note" onclick="deleteNote(${note.id})">Borrar</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function addNote() {
+      const input = document.getElementById('noteInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const notes = getNotes();
+      notes.unshift({
+        id: Date.now(),
+        text: text,
+        date: new Date().toLocaleString()
+      });
+
+      saveNotesArray(notes);
+      input.value = '';
+      renderNotes();
+    }
+
+    function deleteNote(id) {
+      let notes = getNotes();
+      notes = notes.filter(n => n.id !== id);
+      saveNotesArray(notes);
+      renderNotes();
+    }
+
+    /* --- SECCIÓN 2: CONVERSOR DE UNIDADES --- */
+    const RATE_KEY = 'panel_app_exchange_rate';
+
+    function initRate() {
+      const savedRate = localStorage.getItem(RATE_KEY);
+      if (savedRate) {
+        document.getElementById('exchangeRate').value = savedRate;
+      }
+    }
+
+    function saveExchangeRate() {
+      const rate = document.getElementById('exchangeRate').value;
+      localStorage.setItem(RATE_KEY, rate);
+    }
+
+    function convertLength(source) {
+      const mInput = document.getElementById('valMetros');
+      const ftInput = document.getElementById('valPies');
+
+      if (source === 'm') {
+        const val = parseFloat(mInput.value);
+        ftInput.value = isNaN(val) ? '' : (val * 3.28084).toFixed(4);
+      } else {
+        const val = parseFloat(ftInput.value);
+        mInput.value = isNaN(val) ? '' : (val / 3.28084).toFixed(4);
+      }
+    }
+
+    function convertWeight(source) {
+      const kgInput = document.getElementById('valKilos');
+      const lbInput = document.getElementById('valLibras');
+
+      if (source === 'kg') {
+        const val = parseFloat(kgInput.value);
+        lbInput.value = isNaN(val) ? '' : (val * 2.20462).toFixed(4);
+      } else {
+        const val = parseFloat(lbInput.value);
+        kgInput.value = isNaN(val) ? '' : (val / 2.20462).toFixed(4);
+      }
+    }
+
+    function convertCurrency(source) {
+      const mxnInput = document.getElementById('valMxn');
+      const usdInput = document.getElementById('valUsd');
+      const rate = parseFloat(document.getElementById('exchangeRate').value) || 1;
+
+      if (source === 'mxn') {
+        const val = parseFloat(mxnInput.value);
+        usdInput.value = isNaN(val) ? '' : (val / rate).toFixed(2);
+      } else {
+        const val = parseFloat(usdInput.value);
+        mxnInput.value = isNaN(val) ? '' : (val * rate).toFixed(2);
+      }
+    }
+
+    /* --- SECCIÓN 3: LISTA DE TAREAS --- */
+    const TODO_KEY = 'panel_app_todos';
+
+    function getTodos() {
+      return JSON.parse(localStorage.getItem(TODO_KEY) || '[]');
+    }
+
+    function saveTodosArray(todos) {
+      localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+    }
+
+    function renderTodos() {
+      const list = document.getElementById('todoList');
+      const stats = document.getElementById('todoStats');
+      const todos = getTodos();
+
+      list.innerHTML = '';
+      const pendingCount = todos.filter(t => !t.completed).length;
+      stats.textContent = `${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`;
+
+      if (todos.length === 0) {
+        list.innerHTML = '<li class="empty-msg">No hay tareas en la lista.</li>';
+        return;
+      }
+
+      todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+        li.innerHTML = `
+          <div class="todo-item-left">
+            <input type="checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${todo.id})">
+            <span class="todo-text">${escapeHtml(todo.text)}</span>
+          </div>
+          <button class="btn btn-danger btn-delete-note" onclick="deleteTodo(${todo.id})">Borrar</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    function addTodo() {
+      const input = document.getElementById('todoInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const todos = getTodos();
+      todos.push({
+        id: Date.now(),
+        text: text,
+        completed: false
+      });
+
+      saveTodosArray(todos);
+      input.value = '';
+      renderTodos();
+    }
+
+    function handleTodoKeypress(e) {
+      if (e.key === 'Enter') addTodo();
+    }
+
+    function toggleTodo(id) {
+      const todos = getTodos();
+      const todo = todos.find(t => t.id === id);
+      if (todo) {
+        todo.completed = !todo.completed;
+        saveTodosArray(todos);
+        renderTodos();
+      }
+    }
+
+    function deleteTodo(id) {
+      let todos = getTodos();
+      todos = todos.filter(t => t.id !== id);
+      saveTodosArray(todos);
+      renderTodos();
+    }
+
+    /* --- FUNCIONES AUXILIARES E INICIALIZACIÓN --- */
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderNotes();
+      initRate();
+      renderTodos();
+    });
+  </script>
+</body>
+</html>
