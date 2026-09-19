@@ -1,249 +1,250 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080b12">
-<meta name="description" content="Cerebro IA — Agente de desarrollo y automatización">
-<title>Cerebro IA — Agent</title>
-<style>
-:root{--bg:#080b12;--panel:#0e131d;--panel2:#121925;--panel3:#182131;--border:#263244;--text:#eef3fa;--muted:#8d9aad;--accent:#4f8cff;--accent2:#7c5cff;--success:#35d07f;--warning:#f5b942;--danger:#ff5c70;--radius:16px}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-button,textarea,input,select{font:inherit}button{cursor:pointer}
-.app{height:100dvh;display:grid;grid-template-rows:auto 1fr}
-header{height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(8,11,18,.94);backdrop-filter:blur(14px);z-index:20}
-.brand{display:flex;align-items:center;gap:10px;min-width:0}.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:21px;box-shadow:0 8px 25px rgba(79,140,255,.25)}
-.brand-text{min-width:0}.brand-title{font-size:16px;font-weight:800;white-space:nowrap}.brand-sub{color:var(--muted);font-size:11px;margin-top:2px}
-.header-actions{display:flex;align-items:center;gap:7px}.icon-btn{width:38px;height:38px;border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--text);display:grid;place-items:center;font-size:17px}.icon-btn:active{transform:scale(.95)}
-.status{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--panel);border-radius:20px;padding:7px 10px;font-size:11px;color:var(--muted)}
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 10px rgba(53,208,127,.7)}
-.main{min-height:0;display:grid;grid-template-columns:250px minmax(0,1fr) 260px}
-.sidebar{min-height:0;overflow-y:auto;background:var(--panel);border-right:1px solid var(--border);padding:14px}.sidebar.right{border-right:0;border-left:1px solid var(--border)}
-.section-title{font-size:10px;font-weight:800;color:#66758a;text-transform:uppercase;letter-spacing:1px;margin:7px 5px 9px}
-.menu{display:flex;flex-direction:column;gap:5px}.menu-btn{width:100%;border:1px solid transparent;background:transparent;color:#cbd5e3;padding:10px 11px;border-radius:11px;display:flex;align-items:center;gap:10px;text-align:left;font-size:13px}.menu-btn:hover{background:var(--panel2);border-color:var(--border)}.menu-btn.active{background:rgba(79,140,255,.13);border-color:rgba(79,140,255,.3);color:white}.menu-icon{width:22px;text-align:center}
-.divider{height:1px;background:var(--border);margin:15px 0}.connection{padding:10px;border:1px solid var(--border);background:var(--panel2);border-radius:12px;margin-bottom:7px}.connection-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}.connection small{display:block;color:var(--muted);margin-top:5px}.connected{color:var(--success);font-size:10px}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.stat{padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}.stat-value{font-size:18px;font-weight:800}.stat-label{color:var(--muted);font-size:10px;margin-top:3px}
-.chat-area{min-width:0;min-height:0;display:flex;flex-direction:column;background:radial-gradient(circle at 50% -20%,rgba(79,140,255,.08),transparent 40%),var(--bg)}
-.chat{flex:1;min-height:0;overflow-y:auto;padding:22px max(14px,calc((100% - 900px)/2));scroll-behavior:smooth}
-.welcome{max-width:760px;margin:5vh auto 30px;text-align:center}.welcome-logo{width:64px;height:64px;border-radius:20px;margin:0 auto 15px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:31px;box-shadow:0 15px 45px rgba(79,140,255,.2)}.welcome h1{margin:0;font-size:25px}.welcome p{color:var(--muted);line-height:1.5;font-size:13px}
-.capabilities{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:20px}.capability{text-align:left;padding:12px;border:1px solid var(--border);background:var(--panel);border-radius:13px}.capability b{display:block;font-size:12px;margin-bottom:4px}.capability span{color:var(--muted);font-size:10px}
-.msg-row{display:flex;margin:12px 0;gap:9px}.msg-row.user{justify-content:flex-end}.avatar{width:30px;height:30px;min-width:30px;border-radius:10px;display:grid;place-items:center;background:var(--panel3);border:1px solid var(--border);font-size:13px}.msg{max-width:min(820px,88%);padding:12px 14px;border-radius:15px;line-height:1.55;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}.msg.user{background:linear-gradient(135deg,#356fd9,#4a7ff0);color:white;border-bottom-right-radius:5px}.msg.bot{background:var(--panel2);border:1px solid var(--border);border-bottom-left-radius:5px}.msg.system{max-width:100%;background:rgba(79,140,255,.06);border:1px dashed rgba(79,140,255,.25);color:#b9c7da;font-size:12px}.msg pre{overflow:auto;background:#070a0f;border:1px solid #202938;border-radius:10px;padding:12px;margin:10px 0 2px;font-size:12px}.msg code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.msg a{color:#75a9ff;word-break:break-all}.msg-actions{display:flex;gap:5px;margin-top:8px}.msg-action{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:7px;padding:4px 8px;font-size:10px}
-.typing{display:flex;gap:5px;align-items:center;height:20px}.typing span{width:6px;height:6px;border-radius:50%;background:#718198;animation:bounce 1.2s infinite}.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
-.composer-wrap{padding:10px max(12px,calc((100% - 900px)/2));background:linear-gradient(to top,var(--bg),rgba(8,11,18,.75))}.tools{display:flex;gap:6px;overflow-x:auto;padding-bottom:7px;scrollbar-width:none}.tools::-webkit-scrollbar{display:none}.tool{flex:0 0 auto;border:1px solid var(--border);background:var(--panel);color:#b9c6d8;border-radius:9px;padding:6px 9px;font-size:10px}.tool.active{color:white;border-color:rgba(79,140,255,.5);background:rgba(79,140,255,.12)}
-.composer{display:flex;align-items:flex-end;gap:8px;border:1px solid var(--border);background:var(--panel2);border-radius:17px;padding:8px;box-shadow:0 12px 35px rgba(0,0,0,.25)}textarea{flex:1;min-width:0;max-height:160px;resize:none;border:0;outline:0;background:transparent;color:var(--text);padding:8px;font-size:14px;line-height:1.45}textarea::placeholder{color:#69778b}.send{width:43px;height:43px;min-width:43px;border:0;border-radius:12px;color:white;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:18px}.send:disabled{opacity:.4}
-.task-card{border:1px solid var(--border);background:var(--panel2);border-radius:13px;padding:11px;margin-bottom:8px}.task-title{font-size:12px;font-weight:700;line-height:1.4}.task-status{margin-top:7px;font-size:10px;color:var(--muted)}.progress{height:4px;background:#222c3a;border-radius:10px;margin-top:8px;overflow:hidden}.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}.log{max-height:220px;overflow-y:auto;font-family:monospace;font-size:9px;color:#8492a6}.log-line{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}.modal.show{display:flex}.modal-box{width:min(600px,100%);max-height:85dvh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 25px 80px rgba(0,0,0,.45)}.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.modal-header h2{margin:0;font-size:17px}.close{border:1px solid var(--border);background:var(--panel2);color:white;width:34px;height:34px;border-radius:9px}.field{margin-bottom:13px}.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}.field input,.field select{width:100%;border:1px solid var(--border);background:var(--panel2);color:white;border-radius:10px;padding:10px;outline:none}.primary{width:100%;border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;padding:11px;border-radius:10px;font-weight:700}
-@media(max-width:950px){.main{grid-template-columns:1fr}.sidebar.left,.sidebar.right{display:none}.status{display:none}.brand-sub{display:none}.capabilities{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){header{height:58px}.logo{width:36px;height:36px}.brand-title{font-size:14px}.chat{padding:14px 10px}.welcome{margin-top:5vh}.welcome h1{font-size:21px}.capabilities{grid-template-columns:1fr 1fr}.capability{padding:9px}.msg{max-width:92%;font-size:13px}.composer-wrap{padding:8px}textarea{font-size:13px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Probabilidad en Tiempo Real - MLB</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f172a; color: #e2e8f0; text-align: center; padding: 40px 20px; }
+        .card { background: #1e293b; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: 30px; max-width: 500px; margin: 0 auto; }
+        h1 { color: #38bdf8; margin-bottom: 25px; font-size: 24px; }
+        label { display: block; text-align: left; margin-bottom: 8px; color: #94a3b8; font-size: 14px; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 16px; box-sizing: border-box; margin-bottom: 15px; }
+        input:focus { outline: none; border-color: #38bdf8; }
+        button { background-color: #38bdf8; color: #0f172a; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: background 0.2s; }
+        button:hover { background-color: #7dd3fc; }
+        .resultado { margin-top: 25px; padding: 20px; border-radius: 10px; background: #0f172a; border: 1px solid #334155; }
+        .prob-num { font-size: 42px; font-weight: bold; color: #4ade80; }
+        .equipo { font-size: 18px; color: #f8fafc; margin-bottom: 5px; }
+        .fuente { font-size: 12px; color: #64748b; margin-top: 15px; }
+        .error { color: #f87171; }
+        .loading { color: #94a3b8; font-style: italic; }
+    </style>
 </head>
 <body>
-<div class="app">
-<header>
-<div class="brand"><div class="logo">🧠</div><div class="brand-text"><div class="brand-title">Cerebro IA</div><div class="brand-sub">Autonomous Development Agent</div></div></div>
-<div class="header-actions"><div class="status"><span class="status-dot"></span><span id="statusText">Conectado</span></div><button class="icon-btn" id="newChat" title="Nueva conversación">＋</button><button class="icon-btn" id="settingsBtn" title="Configuración">⚙️</button></div>
-</header>
-<div class="main">
-<aside class="sidebar left">
-<div class="section-title">Agente</div>
-<div class="menu">
-<button class="menu-btn active" data-mode="agent"><span class="menu-icon">🤖</span>Agente autónomo</button>
-<button class="menu-btn" data-mode="developer"><span class="menu-icon">💻</span>Desarrollador web</button>
-<button class="menu-btn" data-mode="builder"><span class="menu-icon">🏗️</span>Constructor</button>
-<button class="menu-btn" data-mode="debugger"><span class="menu-icon">🔍</span>Depurador</button>
-<button class="menu-btn" data-mode="architect"><span class="menu-icon">🧩</span>Arquitecto</button>
-</div>
-<div class="divider"></div>
-<div class="section-title">Cerebro</div>
-<div class="menu">
-<button class="menu-btn" data-action="memory"><span class="menu-icon">🧠</span>Memoria</button>
-<button class="menu-btn" data-action="knowledge"><span class="menu-icon">📚</span>Conocimiento</button>
-<button class="menu-btn" data-action="tasks"><span class="menu-icon">📋</span>Tareas</button>
-<button class="menu-btn" data-action="logs"><span class="menu-icon">📜</span>Registro</button>
-</div>
-<div class="divider"></div>
-<div class="section-title">Conexiones</div>
-<div class="connection"><div class="connection-row"><b>Gemini</b><span class="connected">● ACTIVO</span></div><small>Motor de inteligencia</small></div>
-<div class="connection"><div class="connection-row"><b>Supabase</b><span class="connected">● ACTIVO</span></div><small>Memoria y backend</small></div>
-<div class="connection"><div class="connection-row"><b>GitHub</b><span class="connected">● ACTIVO</span></div><small>Código y proyectos</small></div>
-</aside>
+    <div class="card">
+        <h1>⚾ Probabilidad en Tiempo Real</h1>
+        <p style="font-size: 13px; color: #94a3b8; text-align: left; margin-bottom: 20px;">Consulta los mercados de predicción de Polymarket para obtener la probabilidad implícita más actualizada.</p>
+        
+        <label for="nombreEquipo">Nombre del equipo (ej. Dodgers, Yankees, Red Sox):</label>
+        <input type="text" id="nombreEquipo" placeholder="Escribe el nombre del equipo...">
+        
+        <button onclick="buscarProbabilidad()">Investigar Probabilidad</button>
+        
+        <div id="resultado" class="resultado" style="display: none;"></div>
+    </div>
 
-<section class="chat-area">
-<div id="chat" class="chat">
-<div id="welcome" class="welcome">
-<div class="welcome-logo">🧠</div><h1>Cerebro IA</h1>
-<p>Tu centro de desarrollo, automatización y construcción de proyectos. Describe lo que quieres crear y el agente decidirá cómo abordarlo.</p>
-<div class="capabilities">
-<div class="capability"><b>💻 Desarrollo</b><span>HTML, CSS, JavaScript y Python</span></div>
-<div class="capability"><b>🏗️ Construcción</b><span>Webs, herramientas y aplicaciones</span></div>
-<div class="capability"><b>🐙 GitHub</b><span>Repositorios, archivos y commits</span></div>
-<div class="capability"><b>🧠 Memoria</b><span>Conocimiento persistente en Supabase</span></div>
-<div class="capability"><b>🔍 Debug</b><span>Análisis y corrección de errores</span></div>
-<div class="capability"><b>🔄 Aprendizaje</b><span>Registro de resultados y conocimiento</span></div>
-</div></div></div>
+    <script>
+        // Mapeo de nombres comunes a slugs de Polymarket
+        const equiposSlugs = {
+            'dodgers': 'lad',
+            'giants': 'sf',
+            'yankees': 'nyy',
+            'red sox': 'bos',
+            'cubs': 'chc',
+            'mets': 'nym',
+            'braves': 'atl',
+            'astros': 'hou',
+            'phillies': 'phi',
+            'padres': 'sd',
+            'mariners': 'sea',
+            'rangers': 'tex',
+            'blue jays': 'tor',
+            'rays': 'tb',
+            'orioles': 'bal',
+            'guardians': 'cle',
+            'twins': 'min',
+            'tigers': 'det',
+            'royals': 'kc',
+            'white sox': 'cws',
+            'angels': 'laa',
+            'athletics': 'ath',
+            'rockies': 'col',
+            'diamondbacks': 'ari',
+            'brewers': 'mil',
+            'reds': 'cin',
+            'pirates': 'pit',
+            'cardinals': 'stl',
+            'nationals': 'wsh',
+            'marlins': 'mia'
+        };
 
-<div class="composer-wrap">
-<div class="tools">
-<button class="tool active" data-mode-tool="agent">🤖 Agente</button>
-<button class="tool" data-mode-tool="developer">💻 Código</button>
-<button class="tool" data-mode-tool="builder">🏗️ Crear</button>
-<button class="tool" data-mode-tool="debugger">🔍 Debug</button>
-<button class="tool" id="attachBtn">📎 Archivo</button>
-<button class="tool" id="clearBtn">🧹 Limpiar</button>
-</div>
-<div class="composer"><textarea id="pregunta" rows="1" placeholder="Dile a Cerebro qué quieres crear..." autocomplete="off"></textarea><button class="send" id="enviar" title="Enviar">➤</button></div>
-<input type="file" id="fileInput" hidden multiple accept=".html,.css,.js,.json,.txt,.md,.py,.xml,.csv,.sql">
-</div>
-</section>
+        async function buscarProbabilidad() {
+            const input = document.getElementById('nombreEquipo');
+            const resultadoDiv = document.getElementById('resultado');
+            const nombreEquipo = input.value.trim().toLowerCase();
 
-<aside class="sidebar right">
-<div class="section-title">Estado del agente</div>
-<div class="task-card"><div class="task-title" id="currentTask">Esperando una tarea</div><div class="task-status" id="taskStatus">Sin actividad</div><div class="progress"><div class="progress-bar" id="progressBar"></div></div></div>
-<div class="section-title">Sistema</div>
-<div class="stat-grid">
-<div class="stat"><div class="stat-value" id="msgCount">0</div><div class="stat-label">Mensajes</div></div>
-<div class="stat"><div class="stat-value" id="taskCount">0</div><div class="stat-label">Tareas</div></div>
-<div class="stat"><div class="stat-value" id="memoryCount">—</div><div class="stat-label">Memoria</div></div>
-<div class="stat"><div class="stat-value">3</div><div class="stat-label">Conexiones</div></div>
-</div>
-<div class="section-title">Actividad</div>
-<div class="task-card"><div id="log" class="log">
-<div class="log-line">[SYSTEM] Cerebro iniciado</div>
-<div class="log-line">[SYSTEM] Supabase disponible</div>
-<div class="log-line">[SYSTEM] Gemini conectado</div>
-<div class="log-line">[SYSTEM] GitHub preparado</div>
-</div></div>
-</aside>
-</div>
-</div>
+            if (!nombreEquipo) {
+                resultadoDiv.style.display = 'block';
+                resultadoDiv.innerHTML = '<p class="error">Por favor, escribe el nombre de un equipo.</p>';
+                return;
+            }
 
-<div class="modal" id="settingsModal"><div class="modal-box">
-<div class="modal-header"><h2>⚙️ Configuración del agente</h2><button class="close" id="closeSettings">×</button></div>
-<div class="field"><label>Modo predeterminado</label><select id="defaultMode"><option value="agent">Agente autónomo</option><option value="developer">Desarrollador web</option><option value="builder">Constructor</option><option value="debugger">Depurador</option><option value="architect">Arquitecto</option></select></div>
-<div class="field"><label>Nombre del agente</label><input id="agentName" value="Cerebro IA" maxlength="40"></div>
-<button class="primary" id="saveSettings">Guardar configuración</button>
-</div></div>
+            // Buscar el slug del equipo
+            let slugEquipo = null;
+            for (const [nombre, slug] of Object.entries(equiposSlugs)) {
+                if (nombreEquipo.includes(nombre) || nombre.includes(nombreEquipo)) {
+                    slugEquipo = slug;
+                    break;
+                }
+            }
 
-<script>
-const SUPABASE_URL="https://pnjglzuxsyahxcbgjwvq.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuamdsenV4c3lhaHhjYmdqd3ZxIiwic2NwIjoiYW5vbiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzgxNTYyNDg3LCJleHAiOjIwOTcxMzg0ODN9.iD-yLgcC5GiGWQseAykLnONTCr1qA7kXSWgqVQ3-gfM";
-const FUNCTION_URL=`${SUPABASE_URL}/functions/v1/cerebro`;
+            if (!slugEquipo) {
+                resultadoDiv.style.display = 'block';
+                resultadoDiv.innerHTML = '<p class="error">Equipo no reconocido. Prueba con: Dodgers, Giants, Yankees, etc.</p>';
+                return;
+            }
 
-const chat=document.getElementById("chat"),welcome=document.getElementById("welcome"),input=document.getElementById("pregunta"),send=document.getElementById("enviar"),fileInput=document.getElementById("fileInput"),log=document.getElementById("log"),currentTask=document.getElementById("currentTask"),taskStatus=document.getElementById("taskStatus"),progressBar=document.getElementById("progressBar"),msgCount=document.getElementById("msgCount"),taskCount=document.getElementById("taskCount"),settingsModal=document.getElementById("settingsModal");
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.innerHTML = '<p class="loading">Consultando mercados de predicción...</p>';
 
-let state={mode:localStorage.getItem("cerebro_mode")||"agent",messages:[],tasks:0,busy:false,conversationId:localStorage.getItem("cerebro_conversation")||crypto.randomUUID(),files:[]};
+            try {
+                // Consultar la API de Polymarket (Gamma API para mercados públicos)
+                // Buscamos eventos de MLB activos
+                const respuesta = await fetch(
+                    'https://gamma-api.polymarket.com/events?tag=mlb&active=true&closed=false&limit=50',
+                    { headers: { 'Accept': 'application/json' } }
+                );
 
-function escapeHtml(text){const div=document.createElement("div");div.textContent=String(text??"");return div.innerHTML}
-function formatBot(text){
- let html=escapeHtml(text);
- html=html.replace(/```([\s\S]*?)```/g,(_,code)=>`<pre><code>${code.trim()}</code></pre>`);
- html=html.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
- return html;
-}
-function scrollBottom(){requestAnimationFrame(()=>chat.scrollTop=chat.scrollHeight)}
-function addLog(message){const row=document.createElement("div");row.className="log-line";row.textContent=`[${new Date().toLocaleTimeString()}] ${message}`;log.prepend(row)}
-function setProgress(percent){progressBar.style.width=`${Math.max(0,Math.min(100,percent))}%`}
-function setTask(title,status,progress=0){currentTask.textContent=title;taskStatus.textContent=status;setProgress(progress)}
-function updateStats(){msgCount.textContent=state.messages.length;taskCount.textContent=state.tasks}
+                if (!respuesta.ok) throw new Error('Error al consultar la API');
 
-function addUserMessage(text){
- const row=document.createElement("div");row.className="msg-row user";
- const bubble=document.createElement("div");bubble.className="msg user";bubble.textContent=text;row.appendChild(bubble);chat.appendChild(row);
- state.messages.push({role:"user",content:text});updateStats();scrollBottom();
-}
-function addBotMessage(text){
- const row=document.createElement("div");row.className="msg-row";
- const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent="🧠";
- const bubble=document.createElement("div");bubble.className="msg bot";bubble.innerHTML=formatBot(text);
- row.appendChild(avatar);row.appendChild(bubble);chat.appendChild(row);
- state.messages.push({role:"assistant",content:text});updateStats();scrollBottom();return bubble;
-}
-function addSystemMessage(text){const row=document.createElement("div");row.className="msg-row";const bubble=document.createElement("div");bubble.className="msg system";bubble.textContent=text;row.appendChild(bubble);chat.appendChild(row);scrollBottom()}
-function addTyping(){const row=document.createElement("div");row.className="msg-row";row.id="typing";const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent="🧠";const bubble=document.createElement("div");bubble.className="msg bot";bubble.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';row.appendChild(avatar);row.appendChild(bubble);chat.appendChild(row);scrollBottom()}
-function removeTyping(){document.getElementById("typing")?.remove()}
+                const eventos = await respuesta.json();
 
-function setMode(mode){
- state.mode=mode;localStorage.setItem("cerebro_mode",mode);
- document.querySelectorAll("[data-mode]").forEach(btn=>btn.classList.toggle("active",btn.dataset.mode===mode));
- document.querySelectorAll("[data-mode-tool]").forEach(btn=>btn.classList.toggle("active",btn.dataset.modeTool===mode));
- const labels={agent:"Dile a Cerebro qué quieres crear...",developer:"Describe el código o aplicación que quieres desarrollar...",builder:"Describe el proyecto que quieres construir...",debugger:"Pega el error o describe qué necesitas depurar...",architect:"Describe el sistema que quieres diseñar..."};
- input.placeholder=labels[mode]||labels.agent;
-}
+                // Buscar el evento que involucre a nuestro equipo
+                let mercadoEncontrado = null;
+                for (const evento of eventos) {
+                    const titulo = (evento.title || '').toLowerCase();
+                    const slug = (evento.slug || '').toLowerCase();
+                    
+                    // Verificar si el equipo está en el título o slug del evento
+                    const nombresEquipo = Object.keys(equiposSlugs).filter(n => 
+                        n.includes(nombreEquipo) || nombreEquipo.includes(n)
+                    );
+                    
+                    for (const nombre of nombresEquipo) {
+                        if (titulo.includes(nombre) || slug.includes(nombre)) {
+                            // Verificar si es un partido de hoy o próximo
+                            const fechaEvento = evento.startDate ? new Date(evento.startDate) : null;
+                            const hoy = new Date();
+                            
+                            // Buscar dentro de los mercados del evento
+                            if (evento.markets && evento.markets.length > 0) {
+                                for (const mercado of evento.markets) {
+                                    // Buscar el mercado de moneyline (ganador del partido)
+                                    if (mercado.question && 
+                                        (mercado.question.toLowerCase().includes('win') || 
+                                         mercado.question.toLowerCase().includes('moneyline') ||
+                                         mercado.outcomes)) {
+                                        
+                                        mercadoEncontrado = {
+                                            equipo: nombre,
+                                            evento: evento.title,
+                                            mercado: mercado,
+                                            fecha: evento.startDate
+                                        };
+                                        break;
+                                    }
+                                }
+                            }
+                            if (mercadoEncontrado) break;
+                        }
+                    }
+                    if (mercadoEncontrado) break;
+                }
 
-function buildPayload(pregunta){
- return {
-  pregunta,mode:state.mode,conversation_id:state.conversationId,
-  messages:state.messages.slice(-20),
-  files:state.files.map(file=>({name:file.name,type:file.type,size:file.size,content:file.content})),
-  client_context:{platform:"github-pages",interface:"cerebro-agent-v2",capabilities:["web-development","html","css","javascript","python","debugging","architecture","github","supabase","gemini","memory","automation"]}
- };
-}
+                if (!mercadoEncontrado) {
+                    // Si no encontramos mercado específico, mostrar información genérica
+                    resultadoDiv.innerHTML = `
+                        <p class="equipo">🔍 No se encontró un partido activo para "${input.value}"</p>
+                        <p style="font-size: 13px; color: #94a3b8; margin-top: 10px;">
+                            Esto puede pasar si el equipo no juega hoy, si el partido ya terminó, 
+                            o si no hay mercados abiertos en este momento.
+                        </p>
+                    `;
+                    return;
+                }
 
-async function enviarPregunta(){
- if(state.busy)return;
- const pregunta=input.value.trim();if(!pregunta)return;
- state.busy=true;send.disabled=true;if(welcome)welcome.style.display="none";
- addUserMessage(pregunta);input.value="";autoResize();state.tasks++;updateStats();
- setTask("Ejecutando tarea",`Modo: ${state.mode}`,10);addLog(`Nueva tarea → ${state.mode}`);addTyping();
- try{
-  setProgress(25);
-  const response=await fetch(FUNCTION_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_ANON_KEY,"apikey":SUPABASE_ANON_KEY},body:JSON.stringify(buildPayload(pregunta))});
-  setProgress(65);
-  let data;try{data=await response.json()}catch{data={error:"El servidor devolvió una respuesta no válida."}}
-  removeTyping();
-  if(!response.ok){const error=data?.error||data?.message||`Error HTTP ${response.status}`;addBotMessage("⚠️ "+error);addLog(`ERROR → ${error}`);setTask("Tarea con error",error,100);return}
-  const respuesta=data?.respuesta??data?.response??data?.message??data?.result??"El agente terminó la tarea, pero no devolvió texto.";
-  setProgress(90);addBotMessage(String(respuesta));addLog("Respuesta recibida correctamente");
-  if(data?.task)addLog(`Task ID → ${data.task.id||"creada"}`);
-  if(data?.memory_saved)addLog("Memoria → conocimiento guardado");
-  if(data?.github)addLog("GitHub → operación reportada");
-  setProgress(100);setTask("Tarea completada","Resultado recibido",100);
- }catch(error){
-  removeTyping();const message=error?.message||"Error desconocido";addBotMessage(`❌ Error de conexión: ${message}`);addLog(`CONNECTION ERROR → ${message}`);setTask("Error de conexión",message,0);
- }finally{state.busy=false;send.disabled=false;updateStats();input.focus()}
-}
+                // Extraer probabilidades del mercado
+                const mercado = mercadoEncontrado.mercado;
+                let precios = null;
 
-document.getElementById("attachBtn").addEventListener("click",()=>fileInput.click());
-fileInput.addEventListener("change",async()=>{
- const files=Array.from(fileInput.files||[]);if(!files.length)return;
- for(const file of files){try{const content=await file.text();state.files.push({name:file.name,type:file.type,size:file.size,content});addSystemMessage(`📎 Archivo adjuntado: ${file.name}`);addLog(`Archivo → ${file.name}`)}catch{addSystemMessage(`⚠️ No se pudo leer ${file.name}`)}}
- fileInput.value="";
-});
-document.getElementById("clearBtn").addEventListener("click",()=>{state.files=[];addSystemMessage("🧹 Archivos adjuntos eliminados de la tarea actual.");addLog("Contexto de archivos limpiado")});
+                // Intentar obtener precios de diferentes formatos de la API
+                if (mercado.outcomePrices) {
+                    try {
+                        precios = JSON.parse(mercado.outcomePrices);
+                    } catch (e) {
+                        precios = mercado.outcomePrices.split(',').map(Number);
+                    }
+                }
 
-document.getElementById("newChat").addEventListener("click",()=>{
- state.messages=[];state.files=[];state.conversationId=crypto.randomUUID();localStorage.setItem("cerebro_conversation",state.conversationId);chat.innerHTML="";
- const w=document.createElement("div");w.className="welcome";w.innerHTML='<div class="welcome-logo">🧠</div><h1>Nueva sesión</h1><p>Cerebro está listo para recibir una nueva tarea.</p>';chat.appendChild(w);
- updateStats();setTask("Esperando una tarea","Sin actividad",0);addLog("Nueva conversación creada");
-});
+                if (mercado.outcomes && precios) {
+                    let outcomes = [];
+                    try {
+                        outcomes = JSON.parse(mercado.outcomes);
+                    } catch (e) {
+                        outcomes = mercado.outcomes.split(',');
+                    }
 
-document.querySelectorAll("[data-mode]").forEach(btn=>btn.addEventListener("click",()=>setMode(btn.dataset.mode)));
-document.querySelectorAll("[data-mode-tool]").forEach(btn=>btn.addEventListener("click",()=>setMode(btn.dataset.modeTool)));
+                    // Buscar el índice de nuestro equipo
+                    let indiceEquipo = -1;
+                    outcomes.forEach((outcome, i) => {
+                        if (outcome.toLowerCase().includes(mercadoEncontrado.equipo)) {
+                            indiceEquipo = i;
+                        }
+                    });
 
-document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>{
- const prompts={memory:"Consulta mi memoria y dime qué conocimientos relevantes tienes almacenados.",knowledge:"Analiza el conocimiento disponible en mi memoria y dime qué información debería aprender o mejorar.",tasks:"Muéstrame el estado de mis tareas y operaciones recientes.",logs:"Analiza el registro reciente del agente y dime si detectas errores o problemas."};
- input.value=prompts[btn.dataset.action]||"";input.focus();autoResize();
-}));
+                    if (indiceEquipo === -1 && outcomes.length >= 2) {
+                        // Si no encontramos el nombre exacto, asumir que el primer outcome es "Yes" para el equipo local o similar
+                        indiceEquipo = 0;
+                    }
 
-document.getElementById("settingsBtn").addEventListener("click",()=>{document.getElementById("defaultMode").value=state.mode;settingsModal.classList.add("show")});
-document.getElementById("closeSettings").addEventListener("click",()=>settingsModal.classList.remove("show"));
-document.getElementById("saveSettings").addEventListener("click",()=>{
- const mode=document.getElementById("defaultMode").value,name=document.getElementById("agentName").value.trim();
- if(name){document.title=name+" — Agent";document.querySelector(".brand-title").textContent=name}
- setMode(mode);localStorage.setItem("cerebro_name",name);settingsModal.classList.remove("show");addLog("Configuración actualizada");
-});
+                    const probabilidad = precios[indiceEquipo] ? Math.round(precios[indiceEquipo] * 100) : null;
 
-function autoResize(){input.style.height="auto";input.style.height=Math.min(input.scrollHeight,160)+"px"}
-input.addEventListener("input",autoResize);
-input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();enviarPregunta()}});
-send.addEventListener("click",enviarPregunta);
+                    if (probabilidad !== null) {
+                        resultadoDiv.innerHTML = `
+                            <div class="equipo">${mercadoEncontrado.equipo.toUpperCase()}</div>
+                            <div class="prob-num">${probabilidad}%</div>
+                            <div style="font-size: 14px; color: #94a3b8; margin-top: 10px;">
+                                Probabilidad implícita de ganar
+                            </div>
+                            <div style="font-size: 13px; color: #64748b; margin-top: 15px; text-align: left;">
+                                <p><strong>Partido:</strong> ${mercadoEncontrado.evento}</p>
+                                <p><strong>Pregunta:</strong> ${mercado.question}</p>
+                            </div>
+                            <p class="fuente">Fuente: Polymarket (mercado de predicción con dinero real)</p>
+                        `;
+                    } else {
+                        throw new Error('No se pudieron interpretar los precios');
+                    }
+                } else {
+                    // Mostrar información del mercado sin probabilidad numérica clara
+                    resultadoDiv.innerHTML = `
+                        <p class="equipo">📊 ${mercadoEncontrado.evento}</p>
+                        <p style="font-size: 14px; margin-top: 10px;">Mercado encontrado pero sin precios disponibles en este momento.</p>
+                        <p style="font-size: 12px; color: #64748b; margin-top: 10px;">Intenta de nuevo más tarde o consulta directamente en Polymarket.</p>
+                    `;
+                }
 
-(function init(){
- const savedName=localStorage.getItem("cerebro_name");
- if(savedName){document.title=savedName+" — Agent";document.querySelector(".brand-title").textContent=savedName;document.getElementById("agentName").value=savedName}
- setMode(state.mode);updateStats();addLog("Frontend del agente iniciado");
-})();
-</script>
+            } catch (error) {
+                console.error('Error:', error);
+                resultadoDiv.innerHTML = `
+                    <p class="error">⚠️ Error al consultar los datos</p>
+                    <p style="font-size: 13px; color: #94a3b8; margin-top: 10px;">
+                        ${error.message}. 
+                        <br><br>
+                        Esto puede deberse a restricciones de CORS del navegador. 
+                        Para mejores resultados, consulta directamente:
+                        <br>
+                        <a href="https://polymarket.com" target="_blank" style="color: #38bdf8;">polymarket.com</a>
+                    </p>
+                `;
+            }
+        }
+
+        // Permitir buscar con Enter
+        document.getElementById('nombreEquipo').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') buscarProbabilidad();
+        });
+    </script>
 </body>
 </html>
