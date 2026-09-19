@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tareas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .completed-task {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-start p-4 sm:p-8">
+
+    <main class="w-full max-w-xl bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-6 sm:p-8 mt-6">
+        <!-- Encabezado -->
+        <header class="mb-6 text-center sm:text-left">
+            <h1 class="text-3xl font-bold tracking-tight text-white flex items-center justify-center sm:justify-start gap-2">
+                <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+                Lista de Tareas
+            </h1>
+            <p class="text-sm text-slate-400 mt-1">Gestiona tus pendientes de forma sencilla y eficiente.</p>
+        </header>
+
+        <!-- Formulario de Entrada -->
+        <form id="todo-form" class="flex gap-2 mb-6">
+            <input 
+                type="text" 
+                id="todo-input" 
+                placeholder="Escribe una nueva tarea..." 
+                required
+                class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+            >
+            <button 
+                type="submit" 
+                class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium px-5 py-3 rounded-xl transition-all flex items-center justify-center gap-1 text-sm shrink-0"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Agregar</span>
+            </button>
+        </
+form>
+
+        <!-- Barra de Filtros y Estadísticas -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-4 mb-4 text-xs font-medium text-slate-400">
+            <div class="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700/60">
+                <button id="filter-all" type="button" class="filter-btn px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold transition-all">Todas</button>
+                <button id="filter-pending" type="button" class="filter-btn px-3 py-1.5 rounded-md hover:text-slate-200 transition-all">Pendientes</button>
+                <button id="filter-completed" type="button" class="filter-btn px-3 py-1.5 rounded-md hover:text-slate-200 transition-all">Completadas</button>
+            </div>
+            <div id="task-counter" class="text-slate-400 font-medium">
+                0 tareas pendientes
+            </div>
+        </div>
+
+        <!-- Contenedor de Lista de Tareas -->
+        <ul id="todo-list" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+            <!-- Tareas insertadas dinámicamente -->
+        </ul>
+
+        <!-- Estado Vacío -->
+        <div id="empty-state" class="hidden text-center py-8">
+            <svg class="w-12 h-12 text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+            <p class="text-slate-500 text-sm">No hay tareas en esta sección.</p>
+        </div>
+    </main>
+
+    <!-- JavaScript Integrado -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const todoForm = document.getElementById('todo-form');
+            const todoInput = document.getElementById('todo-input');
+            const todoList = document.getElementById('todo-list');
+            const emptyState = document.getElementById('empty-state');
+            const taskCounter = document.getElementById('task-counter');
+            
+            const filterAllBtn = document.getElementById('filter-all');
+            const filterPendingBtn = document.getElementById('filter-pending');
+            const filterCompletedBtn = document.getElementById('filter-completed');
+
+            let tasks = JSON.parse(localStorage.getItem('listatareas_data')) || [];
+            let currentFilter = 'all';
+
+            function saveTasks() {
+                localStorage.setItem('listatareas_data', JSON.stringify(tasks));
+            }
+
+            function render() {
+                todoList.innerHTML = '';
+
+                const filteredTasks = tasks.filter(task => {
+                    if (currentFilter === 'pending') return !task.completed;
+                    if (currentFilter === 'completed') return task.completed;
+                    return true;
+                });
+
+                if (filteredTasks.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                }
+
+                filteredTasks.forEach(task => {
+                    const li = document.createElement('li');
+                    li.className = `flex items-center justify-between p-3.5 bg-slate-900/60 rounded-xl border border-slate-700/50 group hover:border-slate-600 transition-all ${task.completed ? 'opacity-75' : ''}`;
+
+                    li.innerHTML = `
+                        <label class="flex items-center gap-3 overflow-hidden cursor-pointer select-none flex-1 pr-2">
+                            <input 
+                                type="checkbox" 
+                                ${task.completed ? 'checked' : ''} 
+                                data-id="${task.id}"
+                                class="toggle-checkbox w-5 h-5 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 bg-slate-800 cursor-pointer"
+                            >
+                            <span class="text-sm font-medium break-all ${task.completed ? 'completed-task' : 'text-slate-200'}">
+                                ${escapeHTML(task.text)}
+                            </span>
+                        </label>
+                        <button 
+                            type="button"
+                            data-id="${task.id}"
+                            class="delete-btn text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors shrink-0"
+                            title="Eliminar tarea"
+                        >
+                            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    `;
+
+                    todoList.appendChild(li);
+                });
+
+                const pendingCount = tasks.filter(t => !t.completed).length;
+                taskCounter.textContent = `${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`;
+
+                updateFilterUI();
+            }
+
+            function escapeHTML(str) {
+                return str.replace(/[&<>'"]/g, 
+                    tag => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[tag] || tag)
+                );
+            }
+
+            function updateFilterUI() {
+                [filterAllBtn, filterPendingBtn, filterCompletedBtn].forEach(btn => {
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'font-semibold');
+                    btn.classList.add('hover:text-slate-200');
+                });
+
+                let activeBtn = filterAllBtn;
+                if (currentFilter === 'pending') activeBtn = filterPendingBtn;
+                if (currentFilter === 'completed') activeBtn = filterCompletedBtn;
+
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'font-semibold');
+                activeBtn.classList.remove('hover:text-slate-200');
+            }
+
+            todoForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = todoInput.value.trim();
+                if (!text) return;
+
+                const newTask = {
+                    id: Date.now().toString(),
+                    text: text,
+                    completed: false
+                };
+
+                tasks.unshift(newTask);
+                saveTasks();
+                render();
+
+                todoInput.value = '';
+                todoInput.focus();
+            });
+
+            // Evento para cambiar estado de completado
+            todoList.addEventListener('change', (e) => {
+                if (e.target.classList.contains('toggle-checkbox')) {
+                    const id = e.target.getAttribute('data-id');
+                    tasks = tasks.map(task => 
+                        task.id === id ? { ...task, completed: e.target.checked } : task
+                    );
+                    saveTasks();
+                    render();
+                }
+            });
+
+            // Evento para eliminar tareas
+            todoList.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.delete-btn');
+                if (deleteBtn) {
+                    const id = deleteBtn.getAttribute('data-id');
+                    tasks = tasks.filter(task => task.id !== id);
+                    saveTasks();
+                    render();
+                }
+            });
+
+            // Filtros
+            filterAllBtn.addEventListener('click', () => { currentFilter = 'all'; render(); });
+            filterPendingBtn.addEventListener('click', () => { currentFilter = 'pending'; render(); });
+            filterCompletedBtn.addEventListener('click', () => { currentFilter = 'completed'; render(); });
+
+            render();
+        });
+    </script>
+</body>
+</html>
