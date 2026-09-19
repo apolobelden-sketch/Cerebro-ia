@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investigador — Cerebro IA</title>
+<style>
+:root{--bg:#0b0d17;--panel:#141726;--border:#252a3d;--text:#e8e9f3;--muted:#8b8fa3;--accent:#6d5dfc}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+aside{width:260px;background:var(--panel);border-right:1px solid var(--border);padding:16px;overflow-y:auto}
+aside h2{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 12px}
+.hist-item{padding:10px;border-radius:8px;background:#1a1e30;margin-bottom:8px;cursor:pointer;font-size:13px;color:var(--text);border:1px solid transparent}
+.hist-item:hover{border-color:var(--accent)}
+main{flex:1;padding:24px;max-width:800px;margin:0 auto}
+h1{font-size:22px;margin-bottom:4px}
+p.sub{color:var(--muted);margin-top:0;margin-bottom:20px;font-size:14px}
+textarea{width:100%;min-height:90px;background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:14px;font-size:15px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:10px}
+button:disabled{opacity:.5;cursor:default}
+button.secondary{background:#232840;margin-left:8px}
+#resultado{margin-top:24px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;min-height:80px;white-space:pre-wrap;line-height:1.6;font-size:14px}
+#resultado.empty{color:var(--muted)}
+.loader{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
+.dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 1s infinite ease-in-out}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+@media(max-width:700px){aside{display:none}}
+</style>
+</head>
+<body>
+<aside>
+<h2>Historial</h2>
+<div id="historial"></div>
+</aside>
+<main>
+<h1>🔎 Investigador</h1>
+<p class="sub">Escribe cualquier cosa que quieras que investigue — un correo, un juego, un tema para recopilar información.</p>
+<textarea id="pregunta" placeholder="Ej: investiga de qué trata este correo... / dame una reseña y precio de este juego... / recopila información sobre..."></textarea>
+<div>
+<button id="btnInvestigar">Investigar</button>
+<button id="btnCopiar" class="secondary" style="display:none">Copiar resultado</button>
+</div>
+<div id="resultado" class="empty">Aquí va a aparecer lo que encuentre.</div>
+</main>
+<script>
+const SUPABASE_URL = "https://pnjglzuxsyahxcbgjwvq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_f3roew_gvKiClDkdKYieYg_d0_7fWUk";
+const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/cerebro`;
+
+const pregunta = document.getElementById("pregunta");
+const resultado = document.getElementById("resultado");
+const btn = document.getElementById("btnInvestigar");
+const btnCopiar = document.getElementById("btnCopiar");
+const historialEl = document.getElementById("historial");
+
+function cargarHistorial(){
+  const lista = JSON.parse(localStorage.getItem("investigador_historial") || "[]");
+  historialEl.innerHTML = "";
+  lista.forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "hist-item";
+    div.textContent = item.pregunta.slice(0,60);
+    div.onclick = ()=>{ pregunta.value = item.pregunta; mostrarResultado(item.respuesta); };
+    historialEl.appendChild(div);
+  });
+}
+
+function guardarHistorial(preguntaTexto, respuestaTexto){
+  const lista = JSON.parse(localStorage.getItem("investigador_historial") || "[]");
+  lista.unshift({pregunta:preguntaTexto, respuesta:respuestaTexto});
+  localStorage.setItem("investigador_historial", JSON.stringify(lista.slice(0,10)));
+  cargarHistorial();
+}
+
+function mostrarResultado(texto){
+  resultado.classList.remove("empty");
+  resultado.textContent = texto;
+  btnCopiar.style.display = "inline-block";
+}
+
+async function investigar(){
+  const texto = pregunta.value.trim();
+  if(!texto) return;
+  btn.disabled = true;
+  resultado.classList.remove("empty");
+  resultado.innerHTML = '<div class="loader"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Investigando...</div>';
+  btnCopiar.style.display = "none";
+  try{
+    const response = await fetch(FUNCTION_URL,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+SUPABASE_ANON_KEY,
+        "apikey":SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ pregunta: texto, mode:"agent" })
+    });
+    let data;
+    try{ data = await response.json(); } catch { data = { error:"El servidor devolvió una respuesta no válida." }; }
+    if(!response.ok){
+      const error = data?.error || data?.message || `Error HTTP ${response.status}`;
+      mostrarResultado("⚠️ " + error);
+      return;
+    }
+    const respuestaTexto = data?.respuesta ?? data?.response ?? data?.message ?? "No devolvió texto.";
+    mostrarResultado(respuestaTexto);
+    guardarHistorial(texto, respuestaTexto);
+  }catch(error){
+    mostrarResultado("❌ Error de conexión: " + (error?.message || "desconocido"));
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+btnCopiar.onclick = ()=>{
+  navigator.clipboard.writeText(resultado.textContent);
+  btnCopiar.textContent = "¡Copiado!";
+  setTimeout(()=> btnCopiar.textContent = "Copiar resultado", 1500);
+};
+
+btn.onclick = investigar;
+pregunta.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); investigar(); }
+});
+
+cargarHistorial();
+</script>
+</body>
+</html>
