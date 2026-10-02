@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mi Radar de IA</title>
+<style>
+  :root { color-scheme: dark light; --bg:#0f1115; --card:#181b22; --txt:#e8eaf0; --sub:#9aa3b2; --acc:#6ea8fe; --bor:#2a2f3a; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f5f6f8; --card:#ffffff; --txt:#1a1d23; --sub:#5b6472; --acc:#1d5fd1; --bor:#dde1e8; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:16px; position:sticky; top:0; background:var(--bg); border-bottom:1px solid var(--bor); z-index:5; }
+  h1 { margin:0 0 4px; font-size:20px; }
+  #estado { color:var(--sub); font-size:13px; margin-bottom:10px; }
+  input[type=search] { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--bor); background:var(--card); color:var(--txt); font-size:15px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--bor); background:var(--card); color:var(--txt); font-size:13px; cursor:pointer; }
+  .chip.on { background:var(--acc); color:#fff; border-color:var(--acc); }
+  main { padding:12px; max-width:760px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--bor); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card a.t { color:var(--acc); font-weight:600; font-size:16px; text-decoration:none; word-break:break-word; }
+  .card p { margin:8px 0; color:var(--txt); font-size:14px; line-height:1.4; }
+  .meta { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--sub); }
+  .badge { padding:2px 8px; border-radius:999px; border:1px solid var(--bor); }
+  .score { font-weight:700; color:var(--acc); border-color:var(--acc); }
+  .vacio { text-align:center; color:var(--sub); padding:40px 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📡 Mi Radar de IA</h1>
+  <div id="estado">Cargando…</div>
+  <input type="search" id="buscar" placeholder="Buscar en el radar…">
+  <div class="chips" id="chips"></div>
+</header>
+<main id="lista"></main>
+
+<script>
+const SUPABASE_URL = 'https://pnjglzuxsyahxcbgjwvq.supabase.co';
+const LLAVE_PUBLICA = 'sb_publishable_f3roew_gvKiClDkdKYieYg_d0_7fWUk';
+
+let datos = [];
+let categoria = 'todas';
+let texto = '';
+
+const CATS = ['todas','imagen','video','audio','texto','codigo','diseno','automatizacion','otro'];
+
+function hace(fechaIso) {
+  const d = new Date(fechaIso);
+  const h = Math.floor((Date.now() - d.getTime()) / 3600000);
+  if (h < 1) return 'hace minutos';
+  if (h < 24) return 'hace ' + h + ' h';
+  return 'hace ' + Math.floor(h / 24) + ' d';
+}
+
+function crear(tag, clase, contenido) {
+  const el = document.createElement(tag);
+  if (clase) el.className = clase;
+  if (contenido !== undefined) el.textContent = contenido;
+  return el;
+}
+
+function pintar() {
+  const cont = document.getElementById('lista');
+  cont.replaceChildren();
+  const q = texto.trim().toLowerCase();
+  const visibles = datos.filter(function (h) {
+    if (categoria !== 'todas' && h.categoria !== categoria) return false;
+    if (q && !((h.titulo || '') + ' ' + (h.resumen || '')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (!visibles.length) {
+    cont.appendChild(crear('div', 'vacio', 'No hay resultados todavía.'));
+    return;
+  }
+  visibles.forEach(function (h) {
+    const card = crear('div', 'card');
+    const enlace = crear('a', 't', h.titulo);
+    if (/^https?:\/\//i.test(h.url)) {
+      enlace.href = h.url;
+      enlace.target = '_blank';
+      enlace.rel = 'noopener noreferrer';
+    }
+    card.appendChild(enlace);
+    if (h.resumen) card.appendChild(crear('p', '', h.resumen));
+    const meta = crear('div', 'meta');
+    meta.appendChild(crear('span', 'badge score', h.puntaje + '/10'));
+    meta.appendChild(crear('span', 'badge', h.categoria || 'otro'));
+    meta.appendChild(crear('span', 'badge', 'gratis: ' + (h.gratis || 'desconocido')));
+    meta.appendChild(crear('span', '', hace(h.creado_en)));
+    card.appendChild(meta);
+    cont.appendChild(card);
+  });
+}
+
+function pintarChips() {
+  const cont = document.getElementById('chips');
+  cont.replaceChildren();
+  CATS.forEach(function (c) {
+    const b = crear('button', 'chip' + (c === categoria ? ' on' : ''), c);
+    b.onclick = function () { categoria = c; pintarChips(); pintar(); };
+    cont.appendChild(b);
+  });
+}
+
+async function cargar() {
+  const estado = document.getElementById('estado');
+  try {
+    const url = SUPABASE_URL + '/rest/v1/radar_hallazgos'
+      + '?select=titulo,url,resumen,categoria,gratis,puntaje,creado_en'
+      + '&order=puntaje.desc,creado_en.desc&limit=150';
+    const r = await fetch(url, { headers: { apikey: LLAVE_PUBLICA } });
+    if (!r.ok) throw new Error('Error ' + r.status);
+    datos = await r.json();
+    estado.textContent = datos.length + ' hallazgos' + (datos.length ? ' · último ' + hace(datos.reduce(function (a, b) { return a.creado_en > b.creado_en ? a : b; }).creado_en) : '');
+    pintar();
+  } catch (e) {
+    estado.textContent = 'No se pudo cargar: ' + e.message;
+  }
+}
+
+document.getElementById('buscar').addEventListener('input', function (e) { texto = e.target.value; pintar(); });
+pintarChips();
+cargar();
+</script>
+</body>
+</html>
