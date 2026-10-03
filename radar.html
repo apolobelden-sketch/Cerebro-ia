@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>Mi Radar de IA</title>
 <style>
-  :root { color-scheme: dark light; --bg:#0f1115; --card:#181b22; --txt:#e8eaf0; --sub:#9aa3b2; --acc:#6ea8fe; --bor:#2a2f3a; }
+  :root { color-scheme: dark light; --bg:#0f1115; --card:#181b22; --txt:#e8eaf0; --sub:#9aa3b2; --acc:#6ea8fe; --bor:#2a2f3a; --ok:#2e9e5b; --mal:#c0392b; --med:#c58a00; }
   @media (prefers-color-scheme: light) { :root { --bg:#f5f6f8; --card:#ffffff; --txt:#1a1d23; --sub:#5b6472; --acc:#1d5fd1; --bor:#dde1e8; } }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
@@ -17,13 +17,24 @@
   .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
   .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--bor); background:var(--card); color:var(--txt); font-size:13px; cursor:pointer; }
   .chip.on { background:var(--acc); color:#fff; border-color:var(--acc); }
+  label.tog { display:block; margin-top:10px; font-size:13px; color:var(--sub); }
   main { padding:12px; max-width:760px; margin:0 auto; }
   .card { background:var(--card); border:1px solid var(--bor); border-radius:14px; padding:14px; margin-bottom:12px; }
   .card a.t { color:var(--acc); font-weight:600; font-size:16px; text-decoration:none; word-break:break-word; }
-  .card p { margin:8px 0; color:var(--txt); font-size:14px; line-height:1.4; }
+  .card p { margin:8px 0; font-size:14px; line-height:1.4; }
   .meta { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--sub); }
   .badge { padding:2px 8px; border-radius:999px; border:1px solid var(--bor); }
   .score { font-weight:700; color:var(--acc); border-color:var(--acc); }
+  .v-vale_probar { color:var(--ok); border-color:var(--ok); font-weight:600; }
+  .v-dudoso { color:var(--med); border-color:var(--med); font-weight:600; }
+  .v-descartar { color:var(--mal); border-color:var(--mal); font-weight:600; }
+  details { margin-top:10px; border-top:1px solid var(--bor); padding-top:8px; }
+  summary { cursor:pointer; color:var(--acc); font-size:14px; font-weight:600; }
+  .sec { margin:10px 0 2px; font-size:12px; font-weight:700; text-transform:uppercase; color:var(--sub); }
+  .sec + p, .sec + ul, .sec + ol { margin-top:2px; }
+  ul, ol { margin:4px 0; padding-left:20px; font-size:14px; line-height:1.4; }
+  .nota { font-size:12px; color:var(--sub); margin-top:12px; }
+  .aviso { font-size:13px; color:var(--med); margin-top:10px; }
   .vacio { text-align:center; color:var(--sub); padding:40px 10px; }
 </style>
 </head>
@@ -33,6 +44,7 @@
   <div id="estado">Cargando…</div>
   <input type="search" id="buscar" placeholder="Buscar en el radar…">
   <div class="chips" id="chips"></div>
+  <label class="tog"><input type="checkbox" id="verMalos"> Mostrar también los no recomendados</label>
 </header>
 <main id="lista"></main>
 
@@ -43,12 +55,24 @@ const LLAVE_PUBLICA = 'sb_publishable_f3roew_gvKiClDkdKYieYg_d0_7fWUk';
 let datos = [];
 let categoria = 'todas';
 let texto = '';
+let verMalos = false;
 
 const CATS = ['todas','imagen','video','audio','texto','codigo','diseno','automatizacion','otro'];
+const VEREDICTO = {
+  vale_probar: '✅ Vale la pena probar',
+  dudoso: '⚠️ Dudoso',
+  descartar: '⛔ No recomendado'
+};
+const PRECIO = {
+  gratis: 'Gratis',
+  plan_gratis: 'Tiene plan gratis',
+  prueba: 'Prueba gratis',
+  de_pago: 'De pago',
+  no_confirmado: 'Precio no confirmado'
+};
 
 function hace(fechaIso) {
-  const d = new Date(fechaIso);
-  const h = Math.floor((Date.now() - d.getTime()) / 3600000);
+  const h = Math.floor((Date.now() - new Date(fechaIso).getTime()) / 3600000);
   if (h < 1) return 'hace minutos';
   if (h < 24) return 'hace ' + h + ' h';
   return 'hace ' + Math.floor(h / 24) + ' d';
@@ -61,11 +85,62 @@ function crear(tag, clase, contenido) {
   return el;
 }
 
+function seccion(padre, titulo, valor) {
+  if (!valor) return;
+  padre.appendChild(crear('div', 'sec', titulo));
+  padre.appendChild(crear('p', '', valor));
+}
+
+function listaDe(padre, titulo, items, ordenada) {
+  if (!items || !items.length) return;
+  padre.appendChild(crear('div', 'sec', titulo));
+  const l = crear(ordenada ? 'ol' : 'ul');
+  items.forEach(function (i) { l.appendChild(crear('li', '', i)); });
+  padre.appendChild(l);
+}
+
+function enlaceSeguro(a, url) {
+  if (/^https?:\/\//i.test(url)) {
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+  }
+}
+
+function informe(h) {
+  const a = h.analisis;
+  const d = crear('details');
+  d.appendChild(crear('summary', '', '📋 Ver análisis'));
+
+  if (!a) {
+    if (h.analisis_error) {
+      d.appendChild(crear('p', 'aviso', 'No se pudo leer la página automáticamente (' + h.analisis_error + '). Ábrela tú para revisarla.'));
+    } else {
+      d.appendChild(crear('p', 'aviso', '⏳ El análisis todavía está pendiente. Se hará en la próxima corrida.'));
+    }
+    return d;
+  }
+
+  seccion(d, 'Qué es', a.que_es);
+  seccion(d, 'Para quién', a.para_quien);
+  listaDe(d, 'Cómo empezar', a.como_empezar, true);
+  if (a.precio) {
+    seccion(d, 'Precio: ' + (PRECIO[a.precio.estado] || 'no confirmado'), a.precio.detalle);
+  }
+  seccion(d, 'Idioma', a.idioma);
+  listaDe(d, 'Cautelas', a.cautelas, false);
+  seccion(d, 'Veredicto: ' + (VEREDICTO[a.veredicto] || ''), a.razon);
+
+  d.appendChild(crear('div', 'nota', 'Análisis hecho por IA leyendo el texto de la página (confianza: ' + (a.confianza || 'baja') + '). No lo tomes como garantía: verifica el precio y los límites antes de usarla.'));
+  return d;
+}
+
 function pintar() {
   const cont = document.getElementById('lista');
   cont.replaceChildren();
   const q = texto.trim().toLowerCase();
   const visibles = datos.filter(function (h) {
+    if (!verMalos && h.veredicto === 'descartar') return false;
     if (categoria !== 'todas' && h.categoria !== categoria) return false;
     if (q && !((h.titulo || '') + ' ' + (h.resumen || '')).toLowerCase().includes(q)) return false;
     return true;
@@ -77,19 +152,22 @@ function pintar() {
   visibles.forEach(function (h) {
     const card = crear('div', 'card');
     const enlace = crear('a', 't', h.titulo);
-    if (/^https?:\/\//i.test(h.url)) {
-      enlace.href = h.url;
-      enlace.target = '_blank';
-      enlace.rel = 'noopener noreferrer';
-    }
+    enlaceSeguro(enlace, h.url);
     card.appendChild(enlace);
     if (h.resumen) card.appendChild(crear('p', '', h.resumen));
+
     const meta = crear('div', 'meta');
     meta.appendChild(crear('span', 'badge score', h.puntaje + '/10'));
+    if (h.veredicto && VEREDICTO[h.veredicto]) {
+      meta.appendChild(crear('span', 'badge v-' + h.veredicto, VEREDICTO[h.veredicto]));
+    }
     meta.appendChild(crear('span', 'badge', h.categoria || 'otro'));
-    meta.appendChild(crear('span', 'badge', 'gratis: ' + (h.gratis || 'desconocido')));
+    const precio = h.analisis && h.analisis.precio ? (PRECIO[h.analisis.precio.estado] || 'Precio no confirmado') : 'gratis: ' + (h.gratis || 'desconocido');
+    meta.appendChild(crear('span', 'badge', precio));
     meta.appendChild(crear('span', '', hace(h.creado_en)));
     card.appendChild(meta);
+
+    card.appendChild(informe(h));
     cont.appendChild(card);
   });
 }
@@ -108,12 +186,13 @@ async function cargar() {
   const estado = document.getElementById('estado');
   try {
     const url = SUPABASE_URL + '/rest/v1/radar_hallazgos'
-      + '?select=titulo,url,resumen,categoria,gratis,puntaje,creado_en'
+      + '?select=titulo,url,resumen,categoria,gratis,puntaje,creado_en,veredicto,analisis,analisis_error'
       + '&order=puntaje.desc,creado_en.desc&limit=150';
     const r = await fetch(url, { headers: { apikey: LLAVE_PUBLICA } });
     if (!r.ok) throw new Error('Error ' + r.status);
     datos = await r.json();
-    estado.textContent = datos.length + ' hallazgos' + (datos.length ? ' · último ' + hace(datos.reduce(function (a, b) { return a.creado_en > b.creado_en ? a : b; }).creado_en) : '');
+    const ultimo = datos.length ? datos.reduce(function (a, b) { return a.creado_en > b.creado_en ? a : b; }).creado_en : null;
+    estado.textContent = datos.length + ' hallazgos' + (ultimo ? ' · último ' + hace(ultimo) : '');
     pintar();
   } catch (e) {
     estado.textContent = 'No se pudo cargar: ' + e.message;
@@ -121,8 +200,9 @@ async function cargar() {
 }
 
 document.getElementById('buscar').addEventListener('input', function (e) { texto = e.target.value; pintar(); });
+document.getElementById('verMalos').addEventListener('change', function (e) { verMalos = e.target.checked; pintar(); });
 pintarChips();
 cargar();
 </script>
 </body>
-</html>
+</html> 
